@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Jörgen Kristofer Rebane, veebiprogrammeerimine 2023</title>
+</head>
+<body>
+	<img src="/banner/banner.png" alt="Veebiprogrammeerimise kursuse bänner">
+	<h1><%= h1 %></h1>
+	<ul>
+		<!--Teeme ejs tsükli, mis käib läbi massiivi names-->
+		<% names.forEach(function(name){ %>
+			<li><%= name %></li>
+		<% }); %>
+	</ul>
+	<hr>
+	<ul>
+		<li><a href="/">Avalehele</a></li>
+	</ul>
+	<hr>
+</body>
+</html>
