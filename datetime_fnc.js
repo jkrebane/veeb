@@ -42,5 +42,20 @@ const timeOfDayET = function(){
 	return partOfDay;
 }
 
+const convertDateFormat = function(date, format){
+    let dateParts = date.split('/');
+    let month = parseInt(dateParts[0]);
+    let day = parseInt(dateParts[1]);
+    let year = parseInt(dateParts[2]);
+
+    if (format === "ET"){
+        return day + "." + month + "." + year;
+    } else if (format === "EN"){
+        return month + " " + day + " " + year;
+    } else if (format === "EN_SHORT"){
+        return month + "/" + day + "/" + year;
+    }
+};
+
 //ekspordin kõik asjad
-module.exports = {dateETformatted: dateETformatted, timeETformatted: timeETformatted, monthsET: monthNamesET, timeOfDayET: timeOfDayET, dateENformatted: dateENformatted, dateENShort: dateENShort, timeENformatted: timeENformatted, monthsEN: monthNamesEN};
+module.exports = {dateETformatted: dateETformatted, timeETformatted: timeETformatted, monthsET: monthNamesET, timeOfDayET: timeOfDayET, dateENformatted: dateENformatted, dateENShort: dateENShort, timeENformatted: timeENformatted, monthsEN: monthNamesEN, convertDate: convertDateFormat};
