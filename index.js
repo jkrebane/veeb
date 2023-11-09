@@ -125,9 +125,48 @@ app.get('/eestifilm/singlemovie', (req, res)=>{
 
 // POST ÜKS FILM
 app.get('/eestifilm/singlemovie', (req, res)=>{
-    let notice = '';
-    let sql = 'SELECT'
-    res.render('singlemovie')
+    let sql = 'SELECT COUNT(id) FROM movie';
+
+    conn.query(sql, (err, countResult)=>{
+        if (err){
+            res.render('singlemovie', {singlemovie: countResult});
+            //conn.end();
+            throw err;
+        }
+        else {
+            //console.log(result);
+            const movieCount = countResult[0].movieCount;
+            res.render('movieindex', {movieCount});
+            //conn.end();
+        }
+    });
 });
+
+// app.get('/eestifilm/singlemovie', (req, res)=>{
+//     let notice = '';
+//     let sql = 'SELECT'
+//     res.render('singlemovie')
+// });
+
+// UUDISED
+app.get('/news', (req, res)=>{
+    res.render('news');
+});
+
+app.get('/news/add', (req, res)=>{
+    res.render('addnews');
+});
+
+app.get('/news/read', (req, res)=>{
+    res.render('readnews');
+});
+
+app.get('/news/read/:id/:lang', (req, res)=>{
+    //res.render('readnews');
+    console.log(req.params);
+    console.log(req.query);
+    res.send('Tahame uudist, mille id on: ' + req.params.id);
+});
+
 // PORT
 app.listen(5125);
