@@ -3,13 +3,18 @@ const express = require('express');
 const fs = require('fs');
 const mysql = require('mysql2');
 const app = express();
-const bodyparser = require('body-parser')
+const bodyparser = require('body-parser');
 const timeInfo = require('./datetime_fnc');
-const dbInfo = require('../../vp23config')
+const dbInfo = require('../../vp23config');
+const multer = require('multer');
+const sharp = require('sharp');
+// Seadistame vahevara (middleware), mis määrab üleslaadimise kataloogi
+const upload = multer({dest: './public/gallery/orig/'})
 
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
-app.use(bodyparser.urlencoded({extended: false}));
+// Järgnev, kui ainult tekst siis "false", kui ka pilte ja muud siis "true"
+app.use(bodyparser.urlencoded({extended: true}));
 
 // ANDMEBAASI ÜHENDUS
 const conn = mysql.createConnection({
@@ -72,7 +77,7 @@ app.get('/listnames', (req, res)=>{
         };
     })
 });
-
+/*
 // EESTIFILM
 app.get('/eestifilm', (req, res)=>{
     res.render('movieindex')
@@ -141,7 +146,7 @@ app.post('/eestifilm/singlemovie', (req, res)=>{
         }
     });
 });
-
+/** */
 // UUDISED AVALEHT
 app.get('/news', (req, res)=>{
     res.render('news');
@@ -206,12 +211,44 @@ app.get('/news/read/:id', (req, res)=> {
     });
 });
 
-// app.get('/news/read/:id/:lang', (req, res)=>{
-//     //res.render('readnews');
-//     console.log(req.params);
-//     console.log(req.query);
-//     res.send('Tahame uudist, mille id on: ' + req.params.id);
-// });
+// PILDI LAADIMINE
+app.get('/photoupload', (req, res)=>{
+    res.render('photoupload');
+});
+
+// PILDI LAADIMINE POST
+app.post('/photoupload', upload.single('photoInput'), (req, res)=>{
+    let notice = '';
+    console.log(req.file);
+    console.log(req.body);
+    const fileName = 'vp_' + Date.now() + '.jpg';
+    //fs.rename(req.file.path, './public/gallery/orig/' + req.file.originalname, (err)=>{
+    fs.rename(req.file.path, './public/gallery/orig/' + fileName, (err)=>{
+        console.log('Faili laadimise viga: ' + err);
+    });
+    // Loome kaks väiksema mõõduga pildi varianti
+    sharp('./public/gallery/orig/' + fileName).resize(100,100).jpeg({quality : 90}).toFile('./public/gallery/thumbs/' + fileName);
+    sharp('./public/gallery/orig/' + fileName).resize(800,600).jpeg({quality : 90}).toFile('./public/gallery/normal/' + fileName);
+
+    // Foto andmed andmetabelisse
+    let sql = 'INSERT INTO vpgallery (filename, originalname, alttext, privacy, userid) VALUES(?,?,?,?,?)';
+    const userid = 1;
+    conn.query(sql, [fileName, req.file.originalname, req.body.altInput, req.body.privacyInput, userid], (err, res)=>{
+        if(err) {
+            notice = 'Fotot andmete salvestamine ebaõnnestus!';
+            res.render('photoupload', {notice: notice});
+            throw err;
+        } 
+        else {
+            notice = 'Foto ' + req.file.originalname + ' andmete salvestamine õnnestus!'
+            res.render('photoupload', {notice: notice});
+        }
+    });
+});
+
+app.get('/photogallery', (req, res)=>{
+    res.render('photogallery');
+});
 
 // PORT
 app.listen(5125);
