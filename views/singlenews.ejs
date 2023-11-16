@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Jörgen Kristofer Rebane, veebiprogrammeerimine 2023</title>
+</head>
+<body>
+	<img src="/banner/vp_banner.png" alt="veebiprogrammeerimise kursuse banner">
+	<h1>Uudis</h1>
+	<ul>
+        <li><a href="/news/read">Uudiste lugemine</a></li>
+		<li><a href="/news">Uudiste avaleht</a></li>
+		<li><a href="/">Avalehele</a></li>
+	</ul>
+	<hr>
+	<h2>Palun väga, loe uudist</h2>
+    
+    <% if (news) { %>
+        <h3><%= news.title %></h3>
+        <p>Lisatud: <%= news.added %></p>
+        <p><%= news.content %></p>
+    <% } else { %>
+        <p>Uudist ei leitud</p>
+    <% } %>
+</body>
+</html>

@@ -57,5 +57,16 @@ const convertDateFormat = function(date, format){
     }
 };
 
+const dateSQLformated = function(){
+	let timeNow = new Date();
+	//console.log(timeNow)
+	let dateNow =  timeNow.getDate();
+	let monthNow = timeNow.getMonth();
+	let yearNow = timeNow.getFullYear();
+	let dateEN = yearNow + "-" + (monthNow + 1) + "-" + dateNow;
+	return dateEN;
+}
+
+
 //ekspordin kõik asjad
-module.exports = {dateETformatted: dateETformatted, timeETformatted: timeETformatted, monthsET: monthNamesET, timeOfDayET: timeOfDayET, dateENformatted: dateENformatted, dateENShort: dateENShort, timeENformatted: timeENformatted, monthsEN: monthNamesEN, convertDate: convertDateFormat};
+module.exports = {dateETformatted: dateETformatted, timeETformatted: timeETformatted, monthsET: monthNamesET, timeOfDayET: timeOfDayET, dateENformatted: dateENformatted, dateENShort: dateENShort, timeENformatted: timeENformatted, monthsEN: monthNamesEN, convertDate: convertDateFormat, dateSQLformated: dateSQLformated};

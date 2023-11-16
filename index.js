@@ -124,7 +124,7 @@ app.get('/eestifilm/singlemovie', (req, res)=>{
 });
 
 // POST ÜKS FILM
-app.get('/eestifilm/singlemovie', (req, res)=>{
+app.post('/eestifilm/singlemovie', (req, res)=>{
     let sql = 'SELECT COUNT(id) FROM movie';
 
     conn.query(sql, (err, countResult)=>{
@@ -142,31 +142,76 @@ app.get('/eestifilm/singlemovie', (req, res)=>{
     });
 });
 
-// app.get('/eestifilm/singlemovie', (req, res)=>{
-//     let notice = '';
-//     let sql = 'SELECT'
-//     res.render('singlemovie')
-// });
-
-// UUDISED
+// UUDISED AVALEHT
 app.get('/news', (req, res)=>{
     res.render('news');
 });
 
+// LISA UUDIS
 app.get('/news/add', (req, res)=>{
     res.render('addnews');
 });
 
-app.get('/news/read', (req, res)=>{
-    res.render('readnews');
+// LISA UUDIS POST
+app.post('/news/add', (req, res)=>{
+    let notice = '';
+    let sql = 'INSERT INTO vpnews (title, content, expire, userid) VALUES (?,?,?,1)';
+    conn.query(sql, [req.body.titleInput, req.body.contentInput, req.body.expireInput], (err, result)=>{
+        if (err) {
+            notice = 'Andmete salvestamine ebaõnnestus!!!!!!!';
+            res.render('addnews', {notice: notice});
+            throw err
+        }
+        else {
+            notice = 'Uudise ' + req.body.titleInput + ' salvestamine õnnestus!!!';
+            res.render('addnews', {notice: notice});
+        }
+    });
 });
 
-app.get('/news/read/:id/:lang', (req, res)=>{
-    //res.render('readnews');
-    console.log(req.params);
-    console.log(req.query);
-    res.send('Tahame uudist, mille id on: ' + req.params.id);
+// UUDISTE LIST
+app.get('/news/read', (req, res)=> {
+    let sql = 'SELECT * FROM vpnews WHERE expire > CURRENT_DATE AND deleted IS NULL ORDER BY id DESC';
+    let sqlResult = [];
+
+    conn.query(sql, (err, result)=>{
+        if (err){
+            res.render('readnews', {newsList: sqlResult});
+            //conn.end();
+            throw err;
+        }
+        else {
+            //console.log(result);
+            res.render('readnews', {newsList: result});
+            //conn.end();
+        }
+    });
 });
+
+// ÜHE UUDISE LUGEMINE
+app.get('/news/read/:id', (req, res)=> {
+    //res.render('readnews');
+    let newsSQL = 'SELECT * FROM vpnews WHERE id = ? AND deleted IS NULL';
+    let newsID = req.params.id;
+    conn.query(newsSQL, [newsID], (err, result) => {
+        if (err) {
+            throw err;
+        } else {
+            if (result.length > 0) {
+                res.render('singlenews', {news: result[0]});
+            }else {
+                throw err;
+            }
+        }
+    });
+});
+
+// app.get('/news/read/:id/:lang', (req, res)=>{
+//     //res.render('readnews');
+//     console.log(req.params);
+//     console.log(req.query);
+//     res.send('Tahame uudist, mille id on: ' + req.params.id);
+// });
 
 // PORT
 app.listen(5125);
