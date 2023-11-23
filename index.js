@@ -6,10 +6,12 @@ const app = express();
 const bodyparser = require('body-parser');
 const timeInfo = require('./datetime_fnc');
 const dbInfo = require('../../vp23config');
+const dataBase = ('if23_jorgen_re');
 const multer = require('multer');
 const sharp = require('sharp');
 // Seadistame vahevara (middleware), mis määrab üleslaadimise kataloogi
-const upload = multer({dest: './public/gallery/orig/'})
+const upload = multer({dest: './public/gallery/orig/'});
+const async = require('async');
 
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
@@ -21,7 +23,7 @@ const conn = mysql.createConnection({
     host: dbInfo.configData.host,
     user: dbInfo.configData.user,
     password: dbInfo.configData.password,
-    database: dbInfo.configData.database
+    database: dataBase
 });
 
 // AVALEHT
@@ -77,7 +79,7 @@ app.get('/listnames', (req, res)=>{
         };
     })
 });
-/*
+
 // EESTIFILM
 app.get('/eestifilm', (req, res)=>{
     res.render('movieindex')
@@ -105,12 +107,52 @@ app.get('/eestifilm/addfilmperson', (req, res)=>{
     res.render('addfilmperson')
 });
 
+// ADD FILM RELATION
+app.get('/eestifilm/addfilmrelation', (req, res)=>{
+    //kasutades async moodulit paneme mitu tegevust paralleelselt tööle
+    //kõigepealt loome tegevuste loendi
+    const myQueries = [
+        function(callback){
+            conn.execute('SELECT id, first_name, last_name FROM person', (err, result)=>{
+                if (err) {
+                    return callback (err);
+                }
+                else {
+                    return callback(null, result);
+                }
+            });
+        },
+        function(callback){
+            conn.execute('SELECT id, title FROM movie', (err, result)=>{
+                if (err) {
+                    return callback (err);
+                }
+                else {
+                    return callback(null, result);
+                }
+            });
+        }//veel ',' ja järgmine function jnejnejne...
+    ];
+    //paneme kõik need tegevused paralleelselt tööle, tulemuseks list (array) ühendtulemustest
+    async.parallel(myQueries, (err, results)=>{
+        if (err) {
+            throw err;
+        }
+        else {
+            //siin kõik asjad mis on vaja teha
+            console.log(results);
+        }
+    });
+
+    res.render('addfilmrelation')
+});
+
 // POST JA SALVESTAMINE ANDMEBAASI
 app.post('/eestifilm/addfilmperson', (req, res)=>{
     //res.send(req.body);
     let notice = '';
     let sql = 'INSERT INTO person (first_name, last_name, birth_date) VALUES (?,?,?)';
-    conn.query(sql, [req.body.firstNameInput, req.body.lastNameInput, req.body.birthDateInput], (err, result)=>{
+    conn.execute(sql, [req.body.firstNameInput, req.body.lastNameInput, req.body.birthDateInput], (err, result)=>{
         if (err) {
             notice = 'Andmete salvestamine ebaõnnestus!!!!!!!';
             res.render('addfilmperson', {notice: notice});
@@ -146,7 +188,7 @@ app.post('/eestifilm/singlemovie', (req, res)=>{
         }
     });
 });
-/** */
+
 // UUDISED AVALEHT
 app.get('/news', (req, res)=>{
     res.render('news');
@@ -174,7 +216,7 @@ app.post('/news/add', (req, res)=>{
     });
 });
 
-// UUDISTE LIST
+// UUDISTE LIST dont work :()
 app.get('/news/read', (req, res)=> {
     let sql = 'SELECT * FROM vpnews WHERE expire > CURRENT_DATE AND deleted IS NULL ORDER BY id DESC';
     let sqlResult = [];
@@ -193,12 +235,12 @@ app.get('/news/read', (req, res)=> {
     });
 });
 
-// ÜHE UUDISE LUGEMINE
+// ÜHE UUDISE LUGEMINE dont work :()
 app.get('/news/read/:id', (req, res)=> {
     //res.render('readnews');
-    let newsSQL = 'SELECT * FROM vpnews WHERE id = ? AND deleted IS NULL';
-    let newsID = req.params.id;
-    conn.query(newsSQL, [newsID], (err, result) => {
+    let newSQL = 'SELECT * FROM vpnews WHERE id = ? AND deleted IS NULL';
+    let newID = req.params.id;
+    conn.query(newSQL, [newID], (err, result) => {
         if (err) {
             throw err;
         } else {
@@ -224,31 +266,44 @@ app.post('/photoupload', upload.single('photoInput'), (req, res)=>{
     const fileName = 'vp_' + Date.now() + '.jpg';
     //fs.rename(req.file.path, './public/gallery/orig/' + req.file.originalname, (err)=>{
     fs.rename(req.file.path, './public/gallery/orig/' + fileName, (err)=>{
-        console.log('Faili laadimise viga: ' + err);
+        console.log('faili laadimisel viga' + err);
     });
-    // Loome kaks väiksema mõõduga pildi varianti
-    sharp('./public/gallery/orig/' + fileName).resize(100,100).jpeg({quality : 90}).toFile('./public/gallery/thumbs/' + fileName);
-    sharp('./public/gallery/orig/' + fileName).resize(800,600).jpeg({quality : 90}).toFile('./public/gallery/normal/' + fileName);
+    // loome kaks väiksema mõõduga pildivarianti
+    sharp('./public/gallery/orig/' + fileName).resize(100,100).jpeg({quality: 90}).toFile('./public/gallery/thumbs/' + fileName);
 
-    // Foto andmed andmetabelisse
+    sharp('./public/gallery/orig/' + fileName).resize(800,600).jpeg({quality: 90}).toFile('./public/gallery/normal/' + fileName);
+
+    // foto andmed andmetabelisse
     let sql = 'INSERT INTO vpgallery (filename, originalname, alttext, privacy, userid) VALUES(?,?,?,?,?)';
     const userid = 1;
-    conn.query(sql, [fileName, req.file.originalname, req.body.altInput, req.body.privacyInput, userid], (err, res)=>{
+    conn.execute(sql, [fileName, req.file.originalname, req.body.altInput, req.body.privacyInput, userid], (err, result)=>{
         if(err) {
-            notice = 'Fotot andmete salvestamine ebaõnnestus!';
+            notice = 'Foto salvestamine ebaõnnestus';
             res.render('photoupload', {notice: notice});
             throw err;
-        } 
+        }
         else {
-            notice = 'Foto ' + req.file.originalname + ' andmete salvestamine õnnestus!'
+            notice = 'Foto ' + req.file.originalname + ' laeti üles';
             res.render('photoupload', {notice: notice});
         }
     });
 });
 
-app.get('/photogallery', (req, res)=>{
-    res.render('photogallery');
+// PILDIGALERII
+app.get('/photogallery', (req, res)=> {
+	let photoList = [];
+	let sql = 'SELECT id,filename,alttext FROM vpgallery WHERE privacy > 1 AND deleted IS NULL ORDER BY id DESC';
+	conn.execute(sql, (err,result)=>{
+		if (err){
+            res.render('photogallery', {photoList : photoList});
+			throw err;
+		}
+		else {
+			photoList = result;
+			console.log(result);
+			res.render('photogallery', {photoList : photoList});
+		}
+	});
 });
-
 // PORT
 app.listen(5125);

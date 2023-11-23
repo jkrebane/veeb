@@ -3,12 +3,14 @@
 <head>
 	<meta charset="utf-8">
 	<title>Jörgen Kristofer Rebane, veebiprogrammeerimine 2023</title>
+	<script src="/script/check.js" defer></script>
 </head>
 <body>
 	<img src="/banner/banner.png" alt="Veebiprogrammeerimise kursuse bänner">
 	<h1>Fotode laadimine galeriisse</h1>
 	<ul>
 		<li><a href="/">Avalehele</a></li>
+		<li><a href="/photogallery">Pildigalerii</a></li>
 	</ul>
 	<hr>
 	<h2>Fotode üleslaadimine</h2>
@@ -28,7 +30,8 @@
 		<input type="radio" id="privacyInput3" name="privacyInput" value="3">
 		<label for="privacyInput3">Avalik (Kõik näevad)</label>
 		<br>
-		<input type="submit" name="photoSubmit" value="Salvesta">
+		<input type="submit" name="photoSubmit" id="photoSubmit" value="Salvesta">
+		<span id="checkInfo"></span>
 	</form>
 	<p><%=locals.notice || 'Ootel!'%></p>
 </body>

@@ -4,6 +4,8 @@
 	<meta charset="utf-8">
 	<title>Jörgen Kristofer Rebane, veebiprogrammeerimine 2023</title>
 	<link rel="stylesheet" href="/style/gallery.css">
+	<link rel="stylesheet" href="/style/modal.css">
+	<script src="/script/gallery.js" defer></script>
 </head>
 <body>
 	<img src="/banner/banner.png" alt="veebiprogrammeerimise kursuse banner">
@@ -12,17 +14,25 @@
 		<li><a href="/">Avalehele</a></li>
 	</ul>
 	<hr>
-	<h2>Falerii</h2>
-	<div class="gallery">
-	
-	
-		<!--Järgneb korduv osa, iga pisipildi jaoks oma-->
-		<div class="thumbgallery">
-			<img src="gallery/thumbs/vp_1700145750930.jpg" alt="Joul" data-filename="vp_1700145750930.jpg" data-id="1" class="thumbs">
-			<p></p> 
+
+	<dialog id="modal" class="modalarea">
+		<span id="modalClose" class="modalclose">&times;</span>
+		<div class="modalhorizontal">
+			<div class="modalvertical">
+				<p id="modalCaption"></p>
+				<img id="modalImage" src="/pics/empty.png" alt="Galeriipilt">
+			</div>
 		</div>
-	
-	
+	</dialog>
+
+	<h2>Galerii</h2>
+	<div class="gallery">
+		<% photoList.forEach(function(photo){ %>
+			<div class="thumbgallery">
+				<img src="gallery/thumbs/<%=photo.filename%>" alt="<%if(photo.alttext != ''){%><%=photo.alttext%><%}else{%>Galeriipilt<%}%>" data-filename="<%=photo.filename%>" data-id="<%=photo.id%>" class="thumbs">
+				<p></p>
+			</div>
+		<% }); %>
 	</div>
 </body>
 </html>
