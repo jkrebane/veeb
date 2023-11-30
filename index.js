@@ -8,10 +8,17 @@ const timeInfo = require('./datetime_fnc');
 const dbInfo = require('../../vp23config');
 const dataBase = ('if23_jorgen_re');
 const multer = require('multer');
-const sharp = require('sharp');
 // Seadistame vahevara (middleware), mis määrab üleslaadimise kataloogi
 const upload = multer({dest: './public/gallery/orig/'});
+const sharp = require('sharp');
 const async = require('async');
+// Paroolide krüpteerimiseks
+const bcrypt = require('bcrypt');
+// Sessiooni jaoks
+const session = require('express-session');
+
+app.use(session({secret: 'minuAbsoluutseltSalajaneVõti', saveUninitialized: true, resave: false}));
+let mySession;
 
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
@@ -29,6 +36,107 @@ const conn = mysql.createConnection({
 // AVALEHT
 app.get('/', (req,res)=>{
     res.render('index');
+});
+
+// SISSELOGIMINE
+app.post('/', (req,res)=>{
+    let notice = 'Sisesta oma kasutajakonto andmed'
+    if(!req.body.emailInput || !req.body.passwordInput){
+        console.log('Paha');
+    }
+    else {
+        console.log('Hea');
+        let sql = 'SELECT password FROM vpusers WHERE email = ?';
+        conn.execute(sql, [req.body.emailInput], (err, result)=>{
+            if(err) {
+                notice = 'Tehnilise vea tõttu ei saa sisse logida';
+                console.log(notice);
+                res.render('index', {notice: notice});
+            }
+            else {
+                notice = 'Sisse logitud';
+                if(result[0] != null){
+                    console.log(result[0].password);
+                    bcrypt.compare(req.body.passwordInput, result[0].password, (err,compareresult)=>{
+                        if(err) {
+                            throw err;
+                            // notice = 'Vale parool';
+                            // console.log(notice);
+                            // res.render('index',{notice: notice});
+                        }
+                        else {
+                            if(compareresult){
+                                mySession = req.session;
+                                mySession.userName = req.body.emailInput;
+
+                                notice = mySession.userName + 'On sisse loginud';
+                                console.log('Sisse!');
+
+                                res.render('index', {notice: notice});
+
+                            }
+                            else {
+                                console.log('Vale parool');
+                                res.render('index', {notice: notice});
+
+                            }
+                        }
+                    });
+                }
+                else {
+                    notice = 'Kasutajatunnus või parool on vale'
+                    console.log(notice);
+                    res.render('index', {notice: notice});
+                }
+            }
+        });
+        //res.render('index', {notice: notice});
+    }
+});
+
+// LOGOUT
+app.get('/logout', (req, res)=>{
+    req.session.destroy();
+    mySession = null;
+    console.log('Logi välja');
+    res.redirect('/');
+});
+
+// KASUTAJA LOOMINE
+app.get('/signup',(req, res)=>{
+    res.render('signup');
+});
+
+// KASUTAJA LOOMINE POST
+app.post('/signup',(req, res)=>{
+    let notice = 'Ootan andmeid...'
+    console.log(req.body);
+    if(!req.body.firstNameInput || !req.body.lastNameInput || !req.body.genderInput || !req.body.birthInput || !req.body.emailInput || req.body.passwordInput.length < 8 || req.body.passwordInput !== req.body.confirmPasswordInput) {
+        console.log('Andmeid on puudu või pole nad korrektsed!');
+        notice = 'Andmeid on puudu või pole nad korrektsed!'
+        res.render('signup', {notice: notice});
+    }
+    else {
+        console.log('OK!');
+        bcrypt.genSalt(10, (err, salt)=>{
+            bcrypt.hash(req.body.passwordInput, salt, (err, pwdhash)=>{
+                let sql = 'INSERT INTO vpusers (firstName, lastName, birthDate, gender, email, password) VALUES(?,?,?,?,?,?)';
+                conn.execute(sql, [req.body.firstNameInput, req.body.lastNameInput, req.body.birthInput, req.body.genderInput, req.body.emailInput, pwdhash], (err, result)=>{
+                    if (err){
+                        console.log(err);
+                        notice = 'Tehnilistel põhjustel kasutajat ei loodud!';
+                        res.render('signup', {notice: notice});
+                    }
+                    else {
+                        console.log('Kasutaja loodud!');
+                        notice = 'Kasutaja ' + req.body.emailInput + ' loodud!'
+                        res.render('signup', {notice: notice});
+                    }
+                });
+            });
+        });
+    }
+    //res.render('signup');
 });
 
 // TIMEINFO
@@ -254,7 +362,7 @@ app.get('/news/read/:id', (req, res)=> {
 });
 
 // PILDI LAADIMINE
-app.get('/photoupload', (req, res)=>{
+app.get('/photoupload', checkLogin, (req, res)=>{
     res.render('photoupload');
 });
 
@@ -305,5 +413,24 @@ app.get('/photogallery', (req, res)=> {
 		}
 	});
 });
+
+// LOGIN CHECK FUNCTION
+function checkLogin(req, res, next){
+    console.log('Kontrollime sisselogimist...');
+    if(req.session != null){
+        if(mySession.userName){
+            console.log('SEES');
+            next();
+        }
+        else {
+            console.log('EI OLE SEES');
+            res.redirect('/');
+        }
+    }
+    else {
+        res.redirect('/');
+    }
+}
+
 // PORT
 app.listen(5125);
